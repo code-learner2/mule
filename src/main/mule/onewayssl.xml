@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd">
+	<http:listener-config name="HTTP_Listener_config1" doc:name="HTTP Listener config" doc:id="5f6c6b4c-9d37-4caa-a1a2-5792511e2bc0" >
+		<http:listener-connection host="0.0.0.0" port="8082">
+		</http:listener-connection>
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="686cb34f-d3e0-4143-b39f-ff14a400b34f" >
+		<db:my-sql-connection host="127.0.0.1" port="3306" user="root" password="Aniketh@1" database="studentdetails"/>
+	</db:config>
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="adc91e85-fd5c-46a5-8057-1224794b92e9" >
+		<http:listener-connection protocol="HTTPS" host="0.0.0.0" port="8081" readTimeout="3000" >
+			<tls:context >
+				<tls:key-store type="jks" path="server-keystore.jks" keyPassword="Aniketh@1" password="Aniketh@1" alias="mule-server"/>
+			</tls:context>
+		</http:listener-connection>
+	</http:listener-config>
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="dec11ffb-cbc1-4af1-bcb3-d046598f38ea" basePath="/server" >
+		<http:request-connection protocol="HTTPS" host="localhost" port="8081" >
+			<tls:context >
+				<tls:trust-store path="client-truststore.jks" password="Aniketh@1" type="jks" />
+			</tls:context>
+		</http:request-connection>
+	</http:request-config>
+	<flow name="onewayssl-server" doc:id="8cffa0a6-ec47-4318-a5ff-f1a08b8314fe" >
+		<http:listener doc:name="Listener" doc:id="ddee79ff-652b-4d4a-b295-e87f937ac5de" config-ref="HTTP_Listener_config" path="/server"/>
+		<db:select doc:name="Select" doc:id="5a2305eb-95e0-4df9-9356-f20d2303776e" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from studentinfo;]]></db:sql>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="74ad38a3-cbdc-4aa4-83d0-7e7320c7bf3b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="onewayssl-client" doc:id="50baf2b6-82a8-40a6-8c8a-301aec508ff4" >
+		<http:listener doc:name="Listener" doc:id="594b2b9c-27e0-4c05-8133-642e068fb09b" config-ref="HTTP_Listener_config1" path="/client"/>
+		<http:request method="GET" doc:name="Request" doc:id="17302bf7-aa63-46f7-b3f3-3ae582c36df1" config-ref="HTTP_Request_configuration" path="/server"/>
+		<ee:transform doc:name="Transform Message" doc:id="26d28b7a-87ca-4d84-97d7-fa5187264554" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
